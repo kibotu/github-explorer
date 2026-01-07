@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Token Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .result {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            padding: 10px 20px;
+            background: #0969da;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover { background: #0860ca; }
+    </style>
+</head>
+<body>
+    <h1>🔐 GitHub Token Diagnostic</h1>
+    <p>This tool tests if your GitHub token is working correctly and has the right permissions.</p>
+    
+    <button onclick="testToken()">Test Token</button>
+    
+    <div id="results"></div>
+
+    <script src="config.local.js"></script>
+    <script>
+        async function testToken() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<div class="info">Testing...</div>';
+            
+            if (!window.LOCAL_CONFIG || !window.LOCAL_CONFIG.GITHUB_TOKEN || window.LOCAL_CONFIG.GITHUB_TOKEN === 'your_github_token_here') {
+                results.innerHTML = '<div class="error">❌ No valid token found in config.local.js</div>';
+                return;
+            }
+            
+            const token = window.LOCAL_CONFIG.GITHUB_TOKEN;
+            const headers = { 'Authorization': `token ${token}` };
+            
+            let output = '';
+            
+            try {
+                // Test 1: Check token validity
+                output += '<div class="info">Test 1: Checking token validity...</div>';
+                const userResponse = await fetch('https://api.github.com/user', { headers });
+                
+                if (!userResponse.ok) {
+                    output += `<div class="error">❌ Token is invalid (Status: ${userResponse.status})</div>`;
+                    results.innerHTML = output;
+                    return;
+                }
+                
+                const user = await userResponse.json();
+                output += `<div class="success">✓ Token is valid!\nUser: ${user.login}\nName: ${user.name || 'N/A'}</div>`;
+                
+                // Test 2: Check scopes
+                const scopes = userResponse.headers.get('X-OAuth-Scopes');
+                output += `<div class="info">Token Scopes: ${scopes || 'none'}</div>`;
+                
+                if (!scopes || !scopes.includes('repo')) {
+                    output += '<div class="error">⚠️ Warning: Token does not have "repo" scope. Private repositories will not be accessible.</div>';
+                }
+                
+                // Test 3: Fetch repositories
+                output += '<div class="info">Test 2: Fetching repositories...</div>';
+                const reposResponse = await fetch('https://api.github.com/user/repos?per_page=100&affiliation=owner,collaborator,organization_member', { headers });
+                
+                if (!reposResponse.ok) {
+                    output += `<div class="error">❌ Failed to fetch repositories (Status: ${reposResponse.status})</div>`;
+                    results.innerHTML = output;
+                    return;
+                }
+                
+                const repos = await reposResponse.json();
+                const privateRepos = repos.filter(r => r.private);
+                const publicRepos = repos.filter(r => !r.private);
+                
+                output += `<div class="success">✓ Successfully fetched repositories!\n\nTotal: ${repos.length}\nPublic: ${publicRepos.length}\nPrivate: ${privateRepos.length}</div>`;
+                
+                if (privateRepos.length > 0) {
+                    output += '<div class="success">✓ Private repositories are accessible!</div>';
+                    output += `<div class="info">Sample private repos:\n${privateRepos.slice(0, 5).map(r => `- ${r.name}`).join('\n')}</div>`;
+                } else {
+                    output += '<div class="info">ℹ️ No private repositories found (or token lacks permissions)</div>';
+                }
+                
+                // Test 4: Rate limit
+                const rateLimitResponse = await fetch('https://api.github.com/rate_limit', { headers });
+                const rateLimit = await rateLimitResponse.json();
+                output += `<div class="info">Rate Limit:\nRemaining: ${rateLimit.rate.remaining}/${rateLimit.rate.limit}\nResets: ${new Date(rateLimit.rate.reset * 1000).toLocaleString()}</div>`;
+                
+            } catch (error) {
+                output += `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+            
+            results.innerHTML = output;
+        }
+    </script>
+</body>
+</html>
+

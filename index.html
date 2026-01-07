@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Repository Explorer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>GitHub Repository Explorer</h1>
+            <div class="user-info" id="userInfo"></div>
+        </header>
+
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search repositories...">
+            </div>
+            
+            <div class="filters-row">
+                <div class="filters">
+                    <button class="filter-chip" data-filter="forks" data-active="false">
+                        Forks
+                    </button>
+                    <button class="filter-chip" data-filter="sources" data-active="true">
+                        Sources
+                    </button>
+                    <button class="filter-chip" data-filter="public" data-active="true">
+                        Public
+                    </button>
+                    <button class="filter-chip" data-filter="private" data-active="false">
+                        Private
+                    </button>
+                    <button class="filter-chip" data-filter="owner" data-active="true">
+                        Owner
+                    </button>
+                    <button class="filter-chip" data-filter="archived" data-active="false">
+                        Archived
+                    </button>
+                </div>
+                
+                <div class="sort-controls">
+                    <label for="sortBy">Sort by:</label>
+                    <select id="sortBy">
+                        <option value="updated">Last Updated</option>
+                        <option value="pushed">Last Commit</option>
+                        <option value="created">Created Date</option>
+                        <option value="name">Name</option>
+                        <option value="stars">Stars</option>
+                        <option value="forks">Forks</option>
+                    </select>
+                    <select id="sortOrder">
+                        <option value="desc">Descending</option>
+                        <option value="asc">Ascending</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="stats">
+                <span id="repoCount">0 repositories</span>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">Loading repositories...</div>
+        <div id="error" class="error" style="display: none;"></div>
+        
+        <div id="repositories" class="repositories"></div>
+
+        <div id="loadingMore" class="loading-more" style="display: none;">
+            Loading more repositories...
+        </div>
+
+        <div id="endMessage" class="end-message" style="display: none;">
+            🎉 You've reached the end!
+        </div>
+    </div>
+
+    <!-- Load local config if it exists (ignored by git) -->
+    <script src="config.local.js" onerror="console.warn('config.local.js not found - using defaults')"></script>
+    <script src="script.js"></script>
+</body>
+</html>
+
